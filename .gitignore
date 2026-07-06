@@ -1,0 +1,5 @@
+.DS_Store
+*.tmp
+content.json.tmp
+.claude/
+assets/real/

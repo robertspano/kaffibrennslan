@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="is">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kaffibrennslan — Stjórnborð</title>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --gold:#66470a; --coffee:#492e1e; --espresso:#211710;
+    --cream:#f6efe4; --paper:#fbf7f0; --ink:#2e2e2e; --muted:#6b6b6b;
+    --line:rgba(73,46,30,.16); --ok:#2f7d46; --err:#b5532f;
+    --sans:"Open Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--sans);background:var(--paper);color:var(--ink);line-height:1.5;font-size:15px;padding-bottom:6rem}
+  a{color:var(--gold)}
+  /* top bar */
+  .top{position:sticky;top:0;z-index:20;background:rgba(33,23,16,.97);color:#fff;
+    display:flex;align-items:center;justify-content:space-between;gap:1rem;
+    padding:.9rem clamp(1rem,4vw,2.5rem);box-shadow:0 1px 0 rgba(255,255,255,.06)}
+  .top .brand{font-weight:800;font-size:1.1rem;letter-spacing:.01em}
+  .top .brand small{display:block;font-weight:400;font-size:.6rem;letter-spacing:.34em;text-transform:uppercase;color:#d8ad5b;margin-top:2px}
+  .top .actions{display:flex;align-items:center;gap:.7rem;flex-wrap:wrap}
+  .btn{font-family:inherit;font-size:.8rem;font-weight:600;letter-spacing:.03em;border:0;border-radius:100px;
+    padding:.6em 1.3em;cursor:pointer;transition:.2s;white-space:nowrap}
+  .btn-gold{background:var(--gold);color:#fff}
+  .btn-gold:hover{background:#7d5811}
+  .btn-ghost{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.35)}
+  .btn-ghost:hover{background:rgba(255,255,255,.1)}
+  .btn-sm{font-size:.72rem;padding:.4em .9em}
+  .status{font-size:.8rem;font-weight:600}
+  .status.ok{color:#9fe0ad}.status.err{color:#f0ad92}
+  /* layout */
+  .wrap{max-width:900px;margin:0 auto;padding:clamp(1rem,4vw,2.5rem)}
+  .intro{color:var(--muted);margin-bottom:2rem;font-size:.95rem}
+  .card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:1.6rem clamp(1rem,3vw,1.8rem);margin-bottom:1.4rem}
+  .card>h2{font-size:1.15rem;color:var(--coffee);margin-bottom:.3rem;display:flex;align-items:center;gap:.5rem}
+  .card>.hint{color:var(--muted);font-size:.82rem;margin-bottom:1.2rem}
+  .field{margin-bottom:.9rem}
+  .field label{display:block;font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.35rem;font-weight:600}
+  .field input,.field textarea,.field select{
+    width:100%;font-family:inherit;font-size:.95rem;color:var(--ink);
+    background:var(--paper);border:1px solid var(--line);border-radius:9px;padding:.6em .8em;transition:border-color .2s}
+  .field input:focus,.field textarea:focus,.field select:focus{outline:none;border-color:var(--gold)}
+  .field textarea{resize:vertical;min-height:70px}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:.9rem}
+  @media(max-width:560px){.row2{grid-template-columns:1fr}}
+  /* menu categories */
+  .cat{border:1px solid var(--line);border-radius:12px;padding:1.1rem;margin-bottom:1rem;background:var(--paper)}
+  .cat__head{display:flex;justify-content:space-between;align-items:center;gap:.6rem;margin-bottom:.6rem}
+  .cat__head strong{color:var(--coffee)}
+  .item{display:grid;grid-template-columns:1fr 110px auto auto;gap:.5rem;align-items:center;margin-bottom:.5rem}
+  @media(max-width:560px){.item{grid-template-columns:1fr 90px auto auto}}
+  .item input[type=text]{padding:.45em .7em}
+  .item .pop{display:flex;align-items:center;gap:.3em;font-size:.72rem;color:var(--muted);white-space:nowrap}
+  .x{background:#f3e7dd;color:var(--err);border:0;border-radius:8px;width:30px;height:30px;cursor:pointer;font-size:1rem;line-height:1;flex-shrink:0}
+  .x:hover{background:#e6d5c8}
+  .add{background:transparent;border:1px dashed var(--line);color:var(--gold);border-radius:9px;padding:.5em 1em;cursor:pointer;font-family:inherit;font-size:.82rem;font-weight:600}
+  .add:hover{border-color:var(--gold);background:rgba(102,71,10,.05)}
+  .days{display:flex;gap:.3rem;flex-wrap:wrap}
+  .days label{display:inline-flex;flex-direction:column;align-items:center;gap:2px;font-size:.6rem;color:var(--muted);cursor:pointer;text-transform:none;letter-spacing:0}
+  .days input{width:auto}
+  /* image rows */
+  .imgrow{display:flex;gap:.9rem;align-items:flex-start;padding:.8rem;border:1px solid var(--line);border-radius:12px;margin-bottom:.7rem;background:var(--paper)}
+  .thumb{position:relative;width:104px;height:78px;border-radius:9px;overflow:hidden;flex-shrink:0;background:#ece3d6;border:1px solid var(--line)}
+  .thumb img{width:100%;height:100%;object-fit:cover;display:block}
+  .featbadge{position:absolute;left:5px;top:5px;background:var(--gold);color:#fff;font-size:.55rem;font-weight:700;padding:.2em .6em;border-radius:100px;letter-spacing:.05em}
+  .imgmid{flex:1;min-width:0}
+  .imgmid .field{margin-bottom:.5rem}
+  .imgbtns{display:flex;gap:.4rem;flex-wrap:wrap}
+  /* password gate */
+  .gate{position:fixed;inset:0;background:rgba(33,23,16,.55);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;z-index:50;padding:1rem}
+  .gate.show{display:flex}
+  .gate .box{background:#fff;border-radius:16px;padding:2rem;max-width:340px;width:100%;text-align:center}
+  .gate h3{color:var(--coffee);margin-bottom:.4rem}
+  .gate p{color:var(--muted);font-size:.85rem;margin-bottom:1rem}
+  .gate input{width:100%;padding:.7em .9em;border:1px solid var(--line);border-radius:9px;font-family:inherit;font-size:1rem;margin-bottom:1rem}
+  .loading{text-align:center;color:var(--muted);padding:4rem 1rem}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <div class="brand">Kaffibrennslan<small>Stjórnborð</small></div>
+  <div class="actions">
+    <span class="status" id="status"></span>
+    <a class="btn btn-ghost btn-sm" href="index.html" target="_blank">Skoða vef ↗</a>
+    <button class="btn btn-gold" id="saveBtn">Vista breytingar</button>
+  </div>
+</div>
+
+<div class="wrap">
+  <p class="intro">Breyttu efninu hér að neðan og ýttu á <strong>Vista breytingar</strong>. Vefsíðan uppfærist strax. Ekkert sem þú breytir hér skemmir hönnunina.</p>
+  <div id="app"><div class="loading">Sæki efni…</div></div>
+</div>
+
+<div class="gate" id="gate">
+  <div class="box">
+    <h3>Lykilorð</h3>
+    <p>Sláðu inn lykilorð til að vista breytingar.</p>
+    <input type="password" id="pw" placeholder="Lykilorð" />
+    <button class="btn btn-gold" id="pwOk" style="width:100%">Halda áfram</button>
+  </div>
+</div>
+
+<script>
+"use strict";
+var data = null;
+var pw = sessionStorage.getItem("kaffi_pw") || "";
+var ICON_OPTS = [["coffee","Kaffi ☕"],["tea","Te 🍵"],["bar","Bar 🍸"]];
+var DAY_LABELS = [["0","Su"],["1","Má"],["2","Þr"],["3","Mi"],["4","Fi"],["5","Fö"],["6","La"]];
+
+function el(tag, cls, txt){ var e=document.createElement(tag); if(cls)e.className=cls; if(txt!=null)e.textContent=txt; return e; }
+function status(msg, kind){ var s=document.getElementById("status"); s.textContent=msg; s.className="status "+(kind||""); if(kind==="ok") setTimeout(function(){ if(s.textContent===msg){s.textContent="";} },3000); }
+
+/* labelled input bound to obj[key] */
+function field(label, obj, key, opts){
+  opts = opts || {};
+  var wrap = el("div","field");
+  wrap.appendChild(el("label", null, label));
+  var input = document.createElement(opts.textarea ? "textarea" : "input");
+  if(!opts.textarea) input.type = "text";
+  input.value = obj[key] == null ? "" : obj[key];
+  input.addEventListener("input", function(){ obj[key] = input.value; });
+  wrap.appendChild(input);
+  return wrap;
+}
+
+function load(){
+  fetch("content.json?ts="+Date.now(), {cache:"no-store"})
+    .then(function(r){ return r.json(); })
+    .then(function(d){ data = d; render(); })
+    .catch(function(){ document.getElementById("app").innerHTML='<div class="loading">Gat ekki sótt efni. Er þjónninn keyrandi?</div>'; });
+}
+
+function render(){
+  var app = document.getElementById("app");
+  app.innerHTML = "";
+  app.appendChild(sectionHero());
+  app.appendChild(sectionMenu());
+  app.appendChild(sectionGallery());
+  app.appendChild(sectionVisit());
+  app.appendChild(sectionCta());
+  app.appendChild(sectionSimple("Footer", "Stutt lýsing neðst á síðunni.", data.footer, [["text","Texti",1]]));
+}
+
+function cardEl(title, hint){
+  var c = el("div","card");
+  c.appendChild(el("h2", null, title));
+  if(hint) c.appendChild(el("div","hint", hint));
+  return c;
+}
+
+function sectionSimple(title, hint, obj, fields){
+  var c = cardEl(title, hint);
+  fields.forEach(function(f){ c.appendChild(field(f[1], obj, f[0], {textarea:!!f[2]})); });
+  return c;
+}
+
+function sectionHero(){
+  var h = data.hero;
+  var c = cardEl("Forsíða (Hero)", "Efst á síðunni yfir myndbandinu.");
+  c.appendChild(field("Staðsetning (lítill texti)", h, "location"));
+  var r = el("div","row2");
+  r.appendChild(field("Titill – lína 1", h, "titleLine1"));
+  r.appendChild(field("Titill – lína 2", h, "titleLine2"));
+  c.appendChild(r);
+  c.appendChild(field("Undirtexti", h, "lead", {textarea:true}));
+  var r2 = el("div","row2");
+  r2.appendChild(field("Hnappur 1", h, "ctaPrimary"));
+  r2.appendChild(field("Hnappur 2", h, "ctaSecondary"));
+  c.appendChild(r2);
+  // tags
+  var tf = el("div","field");
+  tf.appendChild(el("label", null, "Merki (aðgreint með kommu)"));
+  var ti = el("input"); ti.type="text"; ti.value=(h.tags||[]).join(", ");
+  ti.addEventListener("input", function(){ h.tags = ti.value.split(",").map(function(s){return s.trim();}).filter(Boolean); });
+  tf.appendChild(ti); c.appendChild(tf);
+  return c;
+}
+
+function sectionMenu(){
+  var m = data.menu;
+  var c = cardEl("Matseðill", "Flokkar, atriði, verð og „Vinsælt“ merki.");
+  c.appendChild(field("Yfirtexti", m, "eyebrow"));
+  var r = el("div","row2");
+  r.appendChild(field("Fyrirsögn", m, "title"));
+  r.appendChild(field("Undirtexti", m, "subtitle"));
+  c.appendChild(r);
+  var list = el("div"); list.id="catList";
+  m.categories.forEach(function(cat, ci){ list.appendChild(catEl(cat, ci)); });
+  c.appendChild(list);
+  var add = el("button","add","+ Bæta við flokki");
+  add.addEventListener("click", function(){ m.categories.push({icon:"coffee",tag:"",name:"Nýr flokkur",items:[]}); render(); });
+  c.appendChild(add);
+  return c;
+}
+
+function catEl(cat, ci){
+  var box = el("div","cat");
+  var head = el("div","cat__head");
+  head.appendChild(el("strong", null, "Flokkur " + (ci+1)));
+  var del = el("button","btn add btn-sm","Eyða flokki"); del.style.color="#b5532f"; del.style.borderColor="#e3c6b8";
+  del.addEventListener("click", function(){ data.menu.categories.splice(ci,1); render(); });
+  head.appendChild(del);
+  box.appendChild(head);
+  var r = el("div","row2");
+  r.appendChild(field("Nafn flokks", cat, "name"));
+  r.appendChild(field("Yfirtexti", cat, "tag"));
+  box.appendChild(r);
+  // icon select
+  var iconF = el("div","field");
+  iconF.appendChild(el("label",null,"Tákn"));
+  var sel = el("select");
+  ICON_OPTS.forEach(function(o){ var op=el("option",null,o[1]); op.value=o[0]; if(cat.icon===o[0])op.selected=true; sel.appendChild(op); });
+  sel.addEventListener("change", function(){ cat.icon = sel.value; });
+  iconF.appendChild(sel); box.appendChild(iconF);
+  // items
+  box.appendChild(el("label","", ""));
+  var itemsWrap = el("div");
+  (cat.items||[]).forEach(function(it, ii){ itemsWrap.appendChild(itemEl(cat, it, ii)); });
+  box.appendChild(itemsWrap);
+  var add = el("button","add btn-sm","+ Bæta við atriði");
+  add.addEventListener("click", function(){ cat.items.push({name:"",price:"",popular:false}); render(); });
+  box.appendChild(add);
+  return box;
+}
+
+function itemEl(cat, it, ii){
+  var row = el("div","item");
+  var n = el("input"); n.type="text"; n.placeholder="Nafn"; n.value=it.name||"";
+  n.addEventListener("input", function(){ it.name=n.value; });
+  var p = el("input"); p.type="text"; p.placeholder="Verð"; p.value=it.price||"";
+  p.addEventListener("input", function(){ it.price=p.value; });
+  var popL = el("label","pop");
+  var cb = el("input"); cb.type="checkbox"; cb.checked=!!it.popular;
+  cb.addEventListener("change", function(){ it.popular=cb.checked; });
+  popL.appendChild(cb); popL.appendChild(document.createTextNode("Vinsælt"));
+  var x = el("button","x","×");
+  x.addEventListener("click", function(){ cat.items.splice(ii,1); render(); });
+  row.appendChild(n); row.appendChild(p); row.appendChild(popL); row.appendChild(x);
+  return row;
+}
+
+/* ---- images ---- */
+function pickFile(cb){
+  var inp=document.createElement("input"); inp.type="file"; inp.accept="image/*";
+  inp.addEventListener("change", function(){ if(inp.files[0]) cb(inp.files[0]); });
+  inp.click();
+}
+function uploadImage(file, cb){
+  if(!pw){ showGate(); return; }
+  if(file.size > 11*1024*1024){ status("Mynd of stór (hámark ~10MB)","err"); return; }
+  var reader=new FileReader();
+  reader.onload=function(){
+    status("Hleð upp mynd…");
+    fetch("/api/upload",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({password:pw,name:file.name,data:reader.result})})
+      .then(function(r){ return r.json().then(function(j){return {status:r.status,j:j};}); })
+      .then(function(res){
+        if(res.j.ok){ status("Mynd hlaðin ✓ — mundu að Vista","ok"); cb(res.j.path); }
+        else { status("Villa: "+(res.j.error||""),"err"); if(res.status===401){ pw=""; sessionStorage.removeItem("kaffi_pw"); showGate(); } }
+      })
+      .catch(function(){ status("Villa við upphleðslu","err"); });
+  };
+  reader.readAsDataURL(file);
+}
+
+function sectionGallery(){
+  var g=data.gallery; g.images=g.images||[];
+  var c=cardEl("Gallerí (myndir)","Skiptu um myndir, breyttu texta, bættu við eða eyddu. Fyrsta myndin er stóra myndin.");
+  var r=el("div","row2");
+  r.appendChild(field("Yfirtexti",g,"eyebrow"));
+  r.appendChild(field("Fyrirsögn",g,"title"));
+  c.appendChild(r);
+  var list=el("div");
+  g.images.forEach(function(im,i){ list.appendChild(galleryItemEl(g,im,i)); });
+  c.appendChild(list);
+  var add=el("button","add","+ Bæta við mynd");
+  add.addEventListener("click", function(){ pickFile(function(f){ uploadImage(f,function(p){ g.images.push({src:p,caption:""}); render(); }); }); });
+  c.appendChild(add);
+  return c;
+}
+function galleryItemEl(g, im, i){
+  var box=el("div","imgrow");
+  var thumb=el("div","thumb");
+  var img=el("img"); img.src=im.src; img.alt=""; thumb.appendChild(img);
+  if(i===0) thumb.appendChild(el("span","featbadge","Stór"));
+  box.appendChild(thumb);
+  var mid=el("div","imgmid");
+  mid.appendChild(field("Texti á mynd (birtist við yfirsvif)", im, "caption"));
+  var btns=el("div","imgbtns");
+  var rep=el("button","add btn-sm","Skipta um mynd");
+  rep.addEventListener("click", function(){ pickFile(function(f){ uploadImage(f,function(p){ im.src=p; render(); }); }); });
+  btns.appendChild(rep);
+  if(i>0){
+    var up=el("button","add btn-sm","Gera að stórri");
+    up.addEventListener("click", function(){ g.images.splice(i,1); g.images.unshift(im); render(); });
+    btns.appendChild(up);
+  }
+  mid.appendChild(btns);
+  box.appendChild(mid);
+  var del=el("button","x","×");
+  del.addEventListener("click", function(){ if(g.images.length>1){ g.images.splice(i,1); render(); } else status("Þarf a.m.k. eina mynd","err"); });
+  box.appendChild(del);
+  return box;
+}
+
+function sectionCta(){
+  var c=cardEl("Hvatning (CTA)","Neðsti kaflinn fyrir footer, með bakgrunnsmynd.");
+  c.appendChild(field("Yfirtexti",data.cta,"eyebrow"));
+  c.appendChild(field("Fyrirsögn",data.cta,"title"));
+  c.appendChild(field("Texti",data.cta,"text",{textarea:true}));
+  var box=el("div","imgrow");
+  var thumb=el("div","thumb"); var img=el("img"); img.src=data.cta.image||""; thumb.appendChild(img); box.appendChild(thumb);
+  var mid=el("div","imgmid");
+  var lbl=el("div","field"); lbl.appendChild(el("label",null,"Bakgrunnsmynd")); mid.appendChild(lbl);
+  var rep=el("button","add btn-sm","Skipta um mynd");
+  rep.addEventListener("click", function(){ pickFile(function(f){ uploadImage(f,function(p){ data.cta.image=p; render(); }); }); });
+  mid.appendChild(rep); box.appendChild(mid);
+  c.appendChild(box);
+  return c;
+}
+
+function sectionVisit(){
+  var v = data.visit;
+  var c = cardEl("Heimsókn — opnunartímar & tengiliðir", "Tímar, heimilisfang og símanúmer.");
+  var r = el("div","row2");
+  r.appendChild(field("Yfirtexti", v, "eyebrow"));
+  r.appendChild(field("Fyrirsögn", v, "title"));
+  c.appendChild(r);
+  c.appendChild(el("h2","", "Opnunartímar")).style.cssText="font-size:.95rem;margin:1rem 0 .3rem;color:var(--gold)";
+  c.appendChild(field("Fyrirsögn tímakorts", v, "hoursTitle"));
+  var hoursWrap = el("div");
+  (v.hours||[]).forEach(function(h, hi){ hoursWrap.appendChild(hourEl(v, h, hi)); });
+  c.appendChild(hoursWrap);
+  var add = el("button","add btn-sm","+ Bæta við tímalínu");
+  add.addEventListener("click", function(){ v.hours.push({days:[],label:"",time:""}); render(); });
+  c.appendChild(add);
+  // contact
+  var ch = el("h2"); ch.textContent="Tengiliðir"; ch.style.cssText="font-size:.95rem;margin:1.6rem 0 .3rem;color:var(--gold)";
+  c.appendChild(ch);
+  c.appendChild(field("Fyrirsögn", v, "contactTitle"));
+  c.appendChild(field("Heimilisfang", v, "address"));
+  var r2 = el("div","row2");
+  r2.appendChild(field("Sími (sýnt)", v, "phone"));
+  r2.appendChild(field("Sími (hlekkur, t.d. +3545115888)", v, "phoneHref"));
+  c.appendChild(r2);
+  var r3 = el("div","row2");
+  r3.appendChild(field("Umsagnir – texti", v, "reviewsText"));
+  r3.appendChild(field("Umsagnir – hlekkur", v, "reviewsUrl"));
+  c.appendChild(r3);
+  c.appendChild(field("Instagram hlekkur", v, "instagramUrl"));
+  return c;
+}
+
+function hourEl(v, h, hi){
+  var box = el("div","cat");
+  var r = el("div","row2");
+  r.appendChild(field("Dagar (texti)", h, "label"));
+  r.appendChild(field("Tími (t.d. 8:00 – 23:00)", h, "time"));
+  box.appendChild(r);
+  var df = el("div","field");
+  df.appendChild(el("label",null,"Virkir dagar (fyrir „Opið núna“)"));
+  var days = el("div","days");
+  DAY_LABELS.forEach(function(d){
+    var lab = el("label");
+    var cb = el("input"); cb.type="checkbox"; cb.checked=(h.days||[]).indexOf(+d[0])!==-1;
+    cb.addEventListener("change", function(){
+      h.days = h.days || [];
+      var n=+d[0];
+      if(cb.checked){ if(h.days.indexOf(n)===-1) h.days.push(n); }
+      else { h.days = h.days.filter(function(x){return x!==n;}); }
+      h.days.sort(function(a,b){return a-b;});
+    });
+    lab.appendChild(cb); lab.appendChild(el("span",null,d[1]));
+    days.appendChild(lab);
+  });
+  df.appendChild(days); box.appendChild(df);
+  var x = el("button","btn add btn-sm","Eyða línu"); x.style.color="#b5532f";
+  x.addEventListener("click", function(){ v.hours.splice(hi,1); render(); });
+  box.appendChild(x);
+  return box;
+}
+
+function doSave(){
+  if(!pw){ showGate(); return; }
+  status("Vista…");
+  fetch("/api/save", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({password:pw, content:data})})
+    .then(function(r){ return r.json().then(function(j){ return {status:r.status, j:j}; }); })
+    .then(function(res){
+      if(res.j.ok){ status("Vistað ✓ — endurhladdu vefinn til að sjá", "ok"); }
+      else { status("Villa: "+(res.j.error||"óþekkt"), "err"); if(res.status===401){ pw=""; sessionStorage.removeItem("kaffi_pw"); showGate(); } }
+    })
+    .catch(function(){ status("Villa við að vista (þjónn?)", "err"); });
+}
+
+function showGate(){ document.getElementById("gate").classList.add("show"); document.getElementById("pw").focus(); }
+function hideGate(){ document.getElementById("gate").classList.remove("show"); }
+
+document.getElementById("saveBtn").addEventListener("click", doSave);
+document.getElementById("pwOk").addEventListener("click", function(){
+  pw = document.getElementById("pw").value; sessionStorage.setItem("kaffi_pw", pw); hideGate(); doSave();
+});
+document.getElementById("pw").addEventListener("keydown", function(e){ if(e.key==="Enter") document.getElementById("pwOk").click(); });
+
+load();
+</script>
+</body>
+</html>

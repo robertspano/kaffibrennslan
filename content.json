@@ -1,0 +1,203 @@
+{
+  "hero": {
+    "location": "Laugavegur 21 · 101 Reykjavík",
+    "titleLine1": "Kaffibrennslan",
+    "titleLine2": "síðan 1953",
+    "lead": "Kósí kaffihús í hjarta Reykjavíkur — þar sem ilmurinn af nýbrenndu kaffi mætir hlýju gömlu borgarinnar.",
+    "tags": [
+      "Kaffi",
+      "Te",
+      "Bakkelsi",
+      "Bar"
+    ],
+    "ctaPrimary": "Skoða matseðil",
+    "ctaSecondary": "Finna okkur"
+  },
+  "menu": {
+    "eyebrow": "Matseðill",
+    "title": "Drykkir & meðlæti",
+    "subtitle": "Lagað á staðnum úr fersku hráefni. Verð eru til viðmiðunar.",
+    "categories": [
+      {
+        "icon": "coffee",
+        "tag": "Heitt í bolla",
+        "name": "Kaffi",
+        "items": [
+          {
+            "name": "Espresso",
+            "price": "650 kr",
+            "popular": false
+          },
+          {
+            "name": "Cappuccino",
+            "price": "790 kr",
+            "popular": false
+          },
+          {
+            "name": "Caffè Latte",
+            "price": "820 kr",
+            "popular": true
+          },
+          {
+            "name": "Americano",
+            "price": "690 kr",
+            "popular": false
+          },
+          {
+            "name": "Hellt upp á (Filter)",
+            "price": "620 kr",
+            "popular": false
+          }
+        ]
+      },
+      {
+        "icon": "tea",
+        "tag": "Te & meðlæti",
+        "name": "Te & Bakkelsi",
+        "items": [
+          {
+            "name": "Te (úrval)",
+            "price": "590 kr",
+            "popular": false
+          },
+          {
+            "name": "Heitt súkkulaði",
+            "price": "750 kr",
+            "popular": false
+          },
+          {
+            "name": "Croissant",
+            "price": "680 kr",
+            "popular": false
+          },
+          {
+            "name": "Ristuð samloka",
+            "price": "1.290 kr",
+            "popular": false
+          },
+          {
+            "name": "Terta dagsins",
+            "price": "990 kr",
+            "popular": true
+          }
+        ]
+      },
+      {
+        "icon": "bar",
+        "tag": "Á kvöldin",
+        "name": "Bar",
+        "items": [
+          {
+            "name": "Íslenskur bjór",
+            "price": "1.490 kr",
+            "popular": false
+          },
+          {
+            "name": "Rauðvín (glas)",
+            "price": "1.690 kr",
+            "popular": false
+          },
+          {
+            "name": "Hvítvín (glas)",
+            "price": "1.690 kr",
+            "popular": false
+          },
+          {
+            "name": "Írskt kaffi",
+            "price": "1.890 kr",
+            "popular": true
+          },
+          {
+            "name": "Gos & drykkir",
+            "price": "490 kr",
+            "popular": false
+          }
+        ]
+      }
+    ]
+  },
+  "gallery": {
+    "eyebrow": "Myndir",
+    "title": "Á Brennslunni",
+    "images": [
+      {
+        "src": "assets/img/real-storefront.jpg",
+        "caption": "Laugavegur 21"
+      },
+      {
+        "src": "assets/img/real-interior.jpg",
+        "caption": "Við gluggann"
+      },
+      {
+        "src": "assets/img/real-street.jpg",
+        "caption": "Úti á Laugavegi"
+      },
+      {
+        "src": "assets/img/real-cappuccino.jpg",
+        "caption": "Cappuccino"
+      },
+      {
+        "src": "assets/img/real-cup.jpg",
+        "caption": "Heitt súkkulaði"
+      },
+      {
+        "src": "assets/img/real-table.jpg",
+        "caption": "Kaffi & vöfflur"
+      }
+    ]
+  },
+  "visit": {
+    "eyebrow": "Heimsæktu okkur",
+    "title": "Opnunartímar & staðsetning",
+    "hoursTitle": "Opnunartímar",
+    "hours": [
+      {
+        "days": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "label": "Mánudaga–fimmtudaga",
+        "time": "8:00 – 23:00"
+      },
+      {
+        "days": [
+          5
+        ],
+        "label": "Föstudaga",
+        "time": "8:00 – 01:00"
+      },
+      {
+        "days": [
+          6
+        ],
+        "label": "Laugardaga",
+        "time": "9:00 – 01:00"
+      },
+      {
+        "days": [
+          0
+        ],
+        "label": "Sunnudaga",
+        "time": "9:00 – 21:00"
+      }
+    ],
+    "contactTitle": "Hafðu samband",
+    "address": "Laugavegur 21, 101 Reykjavík",
+    "phone": "511 5888",
+    "phoneHref": "+3545115888",
+    "reviewsText": "Lestu hvað fólki finnst →",
+    "reviewsUrl": "https://www.tripadvisor.com/Restaurant_Review-g189970-d5777991-Reviews-Kaffibrennslan-Reykjavik_Capital_Region.html",
+    "instagramUrl": "https://www.instagram.com/kaffibrennslan/"
+  },
+  "cta": {
+    "eyebrow": "Sjáumst",
+    "title": "Komdu við í kaffi",
+    "text": "Á Laugavegi 21 — í hjarta Reykjavíkur. Hlýtt andrúmsloft, gott kaffi og notaleg stund hvenær sem er dagsins.",
+    "image": "assets/img/real-street.jpg"
+  },
+  "footer": {
+    "text": "Kósí kaffihús og bar í hjarta Reykjavíkur. Kaffi, te og girnilegt meðlæti síðan 1953."
+  }
+}
