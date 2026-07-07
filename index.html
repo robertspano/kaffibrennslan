@@ -276,7 +276,14 @@
   </div>
 </footer>
 
-<script src="js/main.js?v=8"></script>
-<script src="js/cms.js?v=8"></script>
+<script src="js/main.js?v=9"></script>
+<script>
+(function(){
+  var edit = new URLSearchParams(location.search).has("edit");
+  var s = document.createElement("script");
+  s.src = (edit ? "js/editor.js" : "js/cms.js") + "?v=9";
+  document.body.appendChild(s);
+})();
+</script>
 </body>
 </html>
