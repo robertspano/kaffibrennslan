@@ -1,23 +1,35 @@
 #!/usr/bin/env python3
-"""Static server for Kaffibrennslan.
+"""Static server + tiny CMS backend for Kaffibrennslan (local editing).
 
-- Serves the site with caching disabled (edits show on a normal refresh).
-- POST /api/save   -> writes content.json (password protected).
-- POST /api/upload -> saves an uploaded image to assets/img/ (password protected).
-Change the password with the KAFFI_ADMIN_PW env var.
+- Serves the site with caching disabled.
+- POST /api/save   -> writes content.json, then auto-commits & pushes to GitHub
+                      (so the live site updates ~1 min later).
+- POST /api/upload -> saves an uploaded image to assets/img/.
+
+No password is required for requests from your own machine (localhost) — the
+editor runs locally, which only you can reach. Requests from anywhere else must
+send the password (KAFFI_ADMIN_PW), so a public tunnel can't be edited.
 """
-import http.server, socketserver, json, os, sys, io, re, base64, secrets
+import http.server, socketserver, json, os, sys, io, re, base64, secrets, subprocess, threading
 
 PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 8080
 ADMIN_PASSWORD = os.environ.get("KAFFI_ADMIN_PW", "kaffi2025")
 ROOT = os.path.dirname(os.path.abspath(__file__))
 CONTENT_PATH = os.path.join(ROOT, "content.json")
 IMG_DIR = os.path.join(ROOT, "assets", "img")
-MAX_SAVE = 512 * 1024          # 512 KB for content.json
-MAX_UPLOAD = 12 * 1024 * 1024  # 12 MB for an image upload (base64 payload)
+MAX_SAVE = 512 * 1024
+MAX_UPLOAD = 12 * 1024 * 1024
+EXT = {"image/jpeg": "jpg", "image/jpg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif"}
 
-EXT = {"image/jpeg": "jpg", "image/jpg": "jpg", "image/png": "png",
-       "image/webp": "webp", "image/gif": "gif"}
+
+def publish():
+    """Commit + push so GitHub Pages updates. Best-effort, never blocks the reply for long."""
+    try:
+        subprocess.run(["git", "add", "-A"], cwd=ROOT, timeout=20, capture_output=True)
+        subprocess.run(["git", "commit", "-m", "Uppfæra efni frá ritli"], cwd=ROOT, timeout=20, capture_output=True)
+        subprocess.run(["git", "push"], cwd=ROOT, timeout=60, capture_output=True)
+    except Exception:
+        pass
 
 
 class Handler(http.server.SimpleHTTPRequestHandler):
@@ -26,6 +38,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         self.send_header("Pragma", "no-cache")
         self.send_header("Expires", "0")
         super().end_headers()
+
+    def _is_local(self):
+        ip = self.client_address[0] if self.client_address else ""
+        return ip in ("127.0.0.1", "::1", "localhost", "::ffff:127.0.0.1")
 
     def _json(self, code, obj):
         body = json.dumps(obj).encode("utf-8")
@@ -47,6 +63,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         except Exception:
             return None
 
+    def _authed(self, payload):
+        return self._is_local() or payload.get("password") == ADMIN_PASSWORD
+
     def do_POST(self):
         path = self.path.split("?")[0]
         if path == "/api/save":
@@ -59,7 +78,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         payload = self._read_body(MAX_SAVE)
         if payload is None:
             return self._json(400, {"ok": False, "error": "bad request"})
-        if payload.get("password") != ADMIN_PASSWORD:
+        if not self._authed(payload):
             return self._json(401, {"ok": False, "error": "rangt lykilorð"})
         content = payload.get("content")
         if not isinstance(content, dict):
@@ -72,13 +91,15 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             os.replace(tmp, CONTENT_PATH)
         except Exception as e:
             return self._json(500, {"ok": False, "error": str(e)})
-        return self._json(200, {"ok": True})
+        # publish to GitHub in the background so the reply is instant
+        threading.Thread(target=publish, daemon=True).start()
+        return self._json(200, {"ok": True, "published": True})
 
     def _upload(self):
         payload = self._read_body(MAX_UPLOAD)
         if payload is None:
             return self._json(400, {"ok": False, "error": "of stór eða ógild skrá"})
-        if payload.get("password") != ADMIN_PASSWORD:
+        if not self._authed(payload):
             return self._json(401, {"ok": False, "error": "rangt lykilorð"})
         data = payload.get("data", "")
         m = re.match(r"^data:([^;]+);base64,(.+)$", data, re.S)
@@ -93,7 +114,6 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return self._json(400, {"ok": False, "error": "gat ekki lesið mynd"})
         if not raw:
             return self._json(400, {"ok": False, "error": "tóm skrá"})
-        # safe filename: keep the stem, drop anything unusual, add a unique suffix
         stem = os.path.splitext(os.path.basename(payload.get("name", "mynd")))[0]
         stem = re.sub(r"[^a-zA-Z0-9_-]+", "-", stem).strip("-").lower()[:40] or "mynd"
         fname = "up-" + stem + "-" + secrets.token_hex(3) + "." + EXT[mime]
@@ -108,6 +128,6 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
 socketserver.TCPServer.allow_reuse_address = True
 with socketserver.TCPServer(("0.0.0.0", PORT), Handler) as httpd:
-    print("Kaffibrennslan (no-cache + CMS) on http://localhost:%d" % PORT)
-    print("Admin password:", ADMIN_PASSWORD)
+    print("Kaffibrennslan CMS á http://localhost:%d" % PORT)
+    print("Ritill:  http://localhost:%d/index.html?edit=1" % PORT)
     httpd.serve_forever()

@@ -10,7 +10,9 @@
     tea: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11h13a2 2 0 0 1 0 4h-1"/><path d="M4 11v5a3 3 0 0 0 3 3h6a3 3 0 0 0 3-3v-5Z"/><path d="M8 4c0 1-1 1-1 2s1 1 1 2"/><path d="M12 4c0 1-1 1-1 2s1 1 1 2"/></svg>',
     bar: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 22h8"/><path d="M12 11v11"/><path d="M5 3h14l-2 8H7Z"/><path d="M5 3 4 1"/></svg>'
   };
-  var data = null, pw = sessionStorage.getItem("kaffi_pw") || "", dirty = false;
+  var data = null, dirty = false;
+  var isLocal = /^(localhost|127\.0\.0\.1|::1|\[::1\])$/.test(location.hostname) || location.protocol === "file:";
+  var LOCAL_URL = "http://localhost:8080/index.html?edit=1";
 
   function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];}); }
   function setPath(o, p, v){ var ks=p.split("."), last=ks.pop(); var t=o; for(var i=0;i<ks.length;i++){ if(t==null) return; t=t[ks[i]]; } if(t) t[last]=v; }
@@ -20,8 +22,8 @@
 
   fetch("content.json?ts="+Date.now(), {cache:"no-store"})
     .then(function(r){ return r.json(); })
-    .then(function(d){ data=d; render(d); enable(); buildBar(); if(window.KAFFI){window.KAFFI.initReveal();window.KAFFI.updateStatus();} })
-    .catch(function(){ render(null); enable(); buildBar(); });
+    .then(function(d){ data=d; render(d); if(isLocal) enable(); buildBar(); if(window.KAFFI){window.KAFFI.initReveal();window.KAFFI.updateStatus();} })
+    .catch(function(){ render(null); if(isLocal) enable(); buildBar(); });
 
   function setText(key,val){ if(val==null) return; document.querySelectorAll('[data-cms="'+key+'"]').forEach(function(el){ el.textContent=val; }); }
 
@@ -129,15 +131,14 @@
     inp.click();
   }
   function uploadImage(file, cb){
-    if(!ensurePw()) return;
     if(file.size>11*1024*1024){ setStatus("Mynd of stór (~10MB hámark)","err"); return; }
     var reader=new FileReader();
     reader.onload=function(){
       setStatus("Hleð upp mynd…");
       fetch("/api/upload",{method:"POST",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({password:pw,name:file.name,data:reader.result})})
+        body:JSON.stringify({name:file.name,data:reader.result})})
         .then(function(r){ return r.json().then(function(j){return {s:r.status,j:j};}); })
-        .then(function(res){ if(res.j.ok){ setStatus("Mynd komin ✓","ok"); cb(res.j.path); } else { setStatus("Villa: "+(res.j.error||""),"err"); if(res.s===401){ pw=""; sessionStorage.removeItem("kaffi_pw"); } } })
+        .then(function(res){ if(res.j.ok){ setStatus("Mynd komin ✓","ok"); cb(res.j.path); } else { setStatus("Villa: "+(res.j.error||""),"err"); } })
         .catch(function(){ setStatus("Villa við upphleðslu (er þjónninn í gangi?)","err"); });
     };
     reader.readAsDataURL(file);
@@ -147,36 +148,39 @@
   var bar, statusEl;
   function buildBar(){
     bar=document.createElement("div"); bar.className="editbar";
-    bar.innerHTML=
-      '<div class="editbar__l"><span class="editbar__dot"></span> Sjónrænn ritill'+
-      '<span class="editbar__hint">— smelltu á texta eða mynd til að breyta</span></div>'+
-      '<div class="editbar__r"><span class="editbar__status" id="edtStatus"></span>'+
-      '<a class="editbar__btn ghost" href="'+location.pathname+'">Hætta</a>'+
-      '<button class="editbar__btn gold" id="edtSave">Vista breytingar</button></div>';
-    document.body.appendChild(bar);
-    statusEl=document.getElementById("edtStatus");
-    document.getElementById("edtSave").addEventListener("click", save);
+    if(isLocal){
+      bar.innerHTML=
+        '<div class="editbar__l"><span class="editbar__dot"></span> Sjónrænn ritill'+
+        '<span class="editbar__hint">— smelltu á texta eða mynd til að breyta</span></div>'+
+        '<div class="editbar__r"><span class="editbar__status" id="edtStatus"></span>'+
+        '<a class="editbar__btn ghost" href="'+location.pathname+'">Hætta</a>'+
+        '<button class="editbar__btn gold" id="edtSave">Vista &amp; birta</button></div>';
+      document.body.appendChild(bar);
+      statusEl=document.getElementById("edtStatus");
+      document.getElementById("edtSave").addEventListener("click", save);
+    } else {
+      bar.classList.add("view");
+      bar.innerHTML=
+        '<div class="editbar__l"><span class="editbar__dot amber"></span> Lifandi vefur (skoðun)'+
+        '<span class="editbar__hint">— til að breyta og vista, opnaðu ritilinn heima</span></div>'+
+        '<div class="editbar__r"><a class="editbar__btn ghost" href="'+location.pathname+'">Loka</a>'+
+        '<a class="editbar__btn gold" href="'+LOCAL_URL+'">Opna ritil heima →</a></div>';
+      document.body.appendChild(bar);
+    }
   }
   function setStatus(msg,kind){ if(!statusEl) return; statusEl.textContent=msg; statusEl.className="editbar__status "+(kind||""); if(kind==="ok") setTimeout(function(){ if(statusEl.textContent===msg) statusEl.textContent=""; },3500); }
   function markDirty(){ var b=document.getElementById("edtSave"); if(b) b.classList.add("has-changes"); }
 
-  function ensurePw(){
-    if(pw) return true;
-    var p=window.prompt("Lykilorð til að vista:");
-    if(p){ pw=p; sessionStorage.setItem("kaffi_pw",pw); return true; }
-    return false;
-  }
   function save(){
     if(!data){ setStatus("Ekkert efni hlaðið","err"); return; }
-    if(!ensurePw()) return;
-    setStatus("Vista…");
-    fetch("/api/save",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password:pw,content:data})})
+    setStatus("Vista & birti…");
+    fetch("/api/save",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({content:data})})
       .then(function(r){ return r.json().then(function(j){return {s:r.status,j:j};}); })
       .then(function(res){
-        if(res.j.ok){ setStatus("Vistað ✓","ok"); dirty=false; var b=document.getElementById("edtSave"); if(b) b.classList.remove("has-changes"); }
-        else { setStatus("Villa: "+(res.j.error||""),"err"); if(res.s===401){ pw=""; sessionStorage.removeItem("kaffi_pw"); } }
+        if(res.j.ok){ setStatus("Vistað ✓ — birtist á vefnum eftir ~1 mín","ok"); dirty=false; var b=document.getElementById("edtSave"); if(b) b.classList.remove("has-changes"); }
+        else { setStatus("Villa: "+(res.j.error||""),"err"); }
       })
-      .catch(function(){ setStatus("Vistun virkar aðeins heima (serve.py)","err"); });
+      .catch(function(){ setStatus("Villa — er serve.py í gangi?","err"); });
   }
 
   window.addEventListener("beforeunload", function(e){ if(dirty){ e.preventDefault(); e.returnValue=""; } });
@@ -201,6 +205,7 @@
       ".editbar__l{font-size:.82rem;font-weight:600;display:flex;align-items:center;gap:.5em}"+
       ".editbar__hint{font-weight:400;opacity:.6;font-size:.76rem}"+
       ".editbar__dot{width:9px;height:9px;border-radius:50%;background:#7ec98f;box-shadow:0 0 0 0 rgba(126,201,143,.6);animation:edtp 2s infinite}"+
+      ".editbar__dot.amber{background:#e0a03a;animation:none;box-shadow:none}"+
       "@keyframes edtp{70%{box-shadow:0 0 0 7px rgba(126,201,143,0)}100%{box-shadow:0 0 0 0 rgba(126,201,143,0)}}"+
       ".editbar__r{display:flex;align-items:center;gap:.7rem}"+
       ".editbar__status{font-size:.78rem;font-weight:600}.editbar__status.ok{color:#9fe0ad}.editbar__status.err{color:#f0ad92}"+
